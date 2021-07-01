@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="DataMigration" default="all" basedir="." xmlns:sf="antlib:com.salesforce">
+    <property file="build.properties"/>
+    <macrodef name="gitclone">
+      <attribute name="branch" default="master"/>
+      <attribute name="uri"/>
+      <attribute name="folder"/>
+      <sequential>
+        <exec executable="git">
+          <arg value="clone"/>
+          <arg value="-b"/>
+          <arg value="@{branch}"/>
+          <arg value="@{uri}"/>
+          <arg value="@{folder}" />
+        </exec>
+      </sequential>
+    </macrodef>
+    <macrodef name="export">
+        <attribute name="file"/>
+        <attribute name="object"/>
+        <attribute name="soql"/>
+        <sequential>
+            <echo message="Exporting @{object}"/>
+            <mkdir dir="exports"/>
+            <copy file="config/export-process-template.xml" tofile="config/process-conf.xml" overwrite="true" failonerror="true"/>
+            <replace file="config/process-conf.xml">
+                <replacefilter token="_object_" value="@{object}"/>
+                <replacefilter token="_soql_" value="@{soql}"/>
+                <replacefilter token="_file_" value="exports/@{file}.csv"/>
+                <replacefilter token="_username_" value="${sf.username}"/>
+                <replacefilter token="_endpoint_" value="${sf.endpoint}"/>
+                <replacefilter token="_password_" value="${sf.encryptedpassword}"/>
+                <replacefilter token="_logpath_" value="${sf.logpath}"/>
+                <replacefilter token="_keypath_" value="${sf.keypath}"/>
+            </replace>
+            <java classname="com.salesforce.dataloader.process.ProcessRunner" classpath="lib/DataLoader.jar" failonerror="true">
+                <sysproperty key="salesforce.config.dir" value="config"/>
+                <arg line="process.name=@{object}Extract"/>
+            </java>
+        </sequential>
+    </macrodef>
+    <macrodef name="upsert">
+        <attribute name="file"/>
+        <attribute name="object"/>
+        <attribute name="externalid"/>
+        <attribute name="mappingfilepath"/>
+        <sequential>
+            <echo message="Upserting @{object}"/>
+            <mkdir dir="exports"/>
+            <copy file="config/upsert-process-template.xml" tofile="config/process-conf.xml" overwrite="true" failonerror="true"/>
+            <replace file="config/process-conf.xml">
+                <replacefilter token="_object_" value="@{object}"/>
+                <replacefilter token="_file_" value="exports/@{file}.csv"/>
+                <replacefilter token="_username_" value="${sf.username}"/>
+                <replacefilter token="_endpoint_" value="${sf.endpoint}"/>
+                <replacefilter token="_password_" value="${sf.encryptedpassword}"/>
+                <replacefilter token="_logpath_" value="${sf.logpath}"/>
+                <replacefilter token="_keypath_" value="${sf.keypath}"/>
+                <replacefilter token="_externalid_" value="@{externalid}"/>
+                <replacefilter token="_mappingfilepath_" value="@{mappingfilepath}"/>
+            </replace>
+            <java classname="com.salesforce.dataloader.process.ProcessRunner" classpath="lib/DataLoader.jar" failonerror="true">
+                <sysproperty key="salesforce.config.dir" value="config"/>
+                <arg line="process.name=@{object}Upsert"/>
+            </java>
+        </sequential>
+    </macrodef>
+
+    <target name="start">
+      <gitclone branch="master" folder="Project" uri=""/>
+      <sf:deploy username="${sf.username}" password="${sf.password}" serverurl="${sf.endpoint}" deployRoot="./project/src" maxPoll="${sf.maxPoll}" pollWaitMillis="${sf.maxWaitMillis}"/>
+      <export file="Account" object="Account" soql="Select Id, Name from Account"/>
+      <upsert file="Account" object="Account" externalid="My_External_ID__c" mappingfilepath="./maps/AccountMap.sdl"/>
+    </target>
+
+    <target name="pull">
+        <delete dir="./src"/>
+        <mkdir dir="./src"/>
+        <sf:retrieve username="${sf.username}" password="${sf.password}" serverurl="${sf.endpoint}" retrieveTarget="/src" unpackaged="/package.xml"/>
+    </target>
+</project>

@@ -1,0 +1,28 @@
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+    <bean id="_object_Extract" class="com.salesforce.dataloader.process.ProcessRunner" singleton="false">
+        <description>Extracts to a CSV file."</description>
+        <property name="name" value="_object__Extract"/>
+        <property name="configOverrideMap">
+            <map>
+                <entry key="sfdc.debugMessages" value="false"/>
+                <entry key="sfdc.debugMessagesFile" value="./logs/_object_Extract.log"/>
+                <entry key="sfdc.endpoint" value="_endpoint_"/>
+                <entry key="sfdc.username" value="_username_"/>
+                <entry key="sfdc.password" value="_password_"/>
+                <entry key="sfdc.timeoutSecs" value="600"/>
+                <entry key="sfdc.loadBatchSize" value="200"/>
+                <entry key="sfdc.extractionRequestSize" value="500"/>
+                <entry key="process.operation" value="extract"/>
+                <entry key="dataAccess.type" value="csvWrite"/>
+                <entry key="sfdc.entity" value="_object_"/>
+                <entry key="sfdc.extractionSOQL" value="_soql_"/>
+                <entry key="dataAccess.name" value="_file_"/>
+                <entry key="process.encryptionKeyFile" value="./config/key.txt"/>
+                <entry key="process.enableExtractStatusOutput" value="true"/>
+                <entry key="process.outputSuccess" value="./logs/_object_Successes"/>
+                <entry key="process.outputError" value="./logs/_object_Errors"/>
+            </map>
+        </property>
+    </bean>
+</beans>
